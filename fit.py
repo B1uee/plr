@@ -13,7 +13,7 @@ def sumsquared_error(sequence, segment,range_xy):
 
 def regression(sequence, seq_range):
     """Return (x0,y0,x1,y1) of a line fit to a segment of a sequence using linear regression"""
-    print(seq_range)
+    #print(seq_range)
     p, error = leastsquareslinefit(sequence,seq_range)   #p为斜率加bias
     x=sequence[:,0]
     index_left=seq_range[0]

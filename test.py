@@ -5,7 +5,7 @@ import fit
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-from torch.utils.tensorboard import SummaryWriter
+#from torch.utils.tensorboard import SummaryWriter
 import math
 from datetime import date, datetime
 import numpy.linalg as LA
@@ -29,14 +29,14 @@ def topdownsegment(max_error=0.001):
     for alg in ['newreno']:
         #path='/home/ml4net/LJH/LJH/contrastive-predictive-cc/data/out/'+alg  
         path = os.getcwd() + "/trace/" + alg
-        writer = SummaryWriter("logs")
+        #writer = SummaryWriter("logs")
         files = os.listdir(path)
         for file in files:
             tmp_path = "{}/{}".format(path, file)
             tmp_files = os.listdir(tmp_path)
             for tmp_file in tmp_files:
                 if tmp_file.endswith('.txt'):
-                    data = load_data(os.path.join(path,file+'/'+tmp_file), writer)
+                    data = load_data(os.path.join(path,file+'/'+tmp_file))
                     speeds=[]
                     segments_all=[]
                     speeds_all=[]
@@ -46,6 +46,7 @@ def topdownsegment(max_error=0.001):
                         input_data=data[start:end]
                         start+=5000
                         segments,speeds = segment.topdownsegment(input_data, fit.regression, fit.sumsquared_error, max_error,speeds=speeds)
+                        print(segments[0:20], speeds[0:20])
                         if start==0:
                             segments_all=segments
                             speeds_all=speeds
@@ -69,15 +70,16 @@ def topdownsegment(max_error=0.001):
                         segments_all=np.asarray(segments_all)
                         #segment=segments[start_index]
                         if x>=segments_all[start_index][0] and x<=segments_all[start_index][2]:
+                            
                             speed_x=speeds_all[start_index][0]
                             output.append([x,speed_x])
-                            writer.add_scalar("pre_data", speed_x, x)
+                            #writer.add_scalar("pre_data", speed_x, x)
                             i+=1
                         else:
                             start_index+=1
                             if start_index>=len(segments_all):
                                 break
-                    writer.close()
+                    #writer.close()
                     save_path = os.getcwd()+'/test/'+alg
                     if not os.path.exists(save_path):
                         os.makedirs(save_path)
@@ -88,7 +90,7 @@ def load_data(path):
     with open(path, 'r') as f:
         file_lines = f.readlines()
     data=[]   #输入xy二维数据
-    for line in file_lines[0:2000]:
+    for line in file_lines:
         if line.strip()!='0.0000000 0.0000000':
             tmp=line.strip().split(' ')
             x=float(tmp[0])
@@ -170,28 +172,23 @@ def bottomUp(data, turn_points, error_thred, error_estimator=merge_cost):
  
     return segments
 
-def new_segement():
+def new_segment():
     #writer = SummaryWriter("logs/"+datetime.now().strftime("%m-%d-%H_%M_%S"))
     raw_data = load_data("trace/newreno/5/cwnd.txt")
     turn_points = get_TurnPoint(raw_data, 1e-6)
-    segments = bottomUp(raw_data, turn_points, 1e-13, merge_cost)
+    segments = bottomUp(raw_data, turn_points, 1e-12, merge_cost)
     draw_plot(raw_data, raw_data[segments], "RawData & Segments")
-    plt.savefig('fig_test.png')
+    plt.savefig('fig_test_2.png')
+    save_path = "test/newreno"
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    np.savetxt(os.path.join(save_path,'5_new_segment_2.txt'), np.asarray(raw_data[segments]),fmt='%.8f %.6f')
 
 if __name__ == "__main__":
-    new_segement()
-    # pre_data = load_data("test/newreno/5.txt")
-
-    #topdownsegment(0.0001)
-    # with open("test/newreno/5.txt", 'r') as f:
-    #     file_lines = f.readlines()
-    # data=[]   #输入xy二维数据
-    # for line in file_lines[0:2000]:
-    #     if line.strip()!='0.0000000 0.0000000':
-    #         tmp=line.strip().split(' ')
-    #         x=float(tmp[0])
-    #         y=float(tmp[1])
-    #     data.append([x,y])
-    # data=np.asarray(data)
-    # draw_plot(data,"topdown")
-    # plt.savefig('test/newreno/fig_test_1.png')
+    new_segment()
+    #topdownsegment(1e-6)
+    #raw_data = load_data("trace/newreno/5/cwnd.txt")
+    #segments = load_data("test/newreno/5_new2.txt")
+    #draw_plot(raw_data, segments, "RawData & Segments")
+    #plt.savefig('fig_test_2.png')
+    
