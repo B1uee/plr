@@ -11,11 +11,13 @@ from datetime import date, datetime
 import numpy.linalg as LA
 
 def draw_plot(data, segments, plot_title):
-    plot(data[:,0],data[:,1],alpha=0.8,color='red')
-    plot(segments[:,0],segments[:,1],alpha=0.8,color='blue')
+    fig = plt.figure(figsize=(16,6))
+    plot(data[:,0],data[:,1],alpha=0.8,color='red',label='raw_data')
+    plot(segments[:,0],segments[:,1],alpha=0.8,color='blue',label='segment_data')
     title(plot_title)
     xlabel("time")
     ylabel("cwnd")
+    plt.savefig(plot_title)
 
 def draw_segments(segments):
     ax = gca()
@@ -46,7 +48,6 @@ def topdownsegment(max_error=0.001):
                         input_data=data[start:end]
                         start+=5000
                         segments,speeds = segment.topdownsegment(input_data, fit.regression, fit.sumsquared_error, max_error,speeds=speeds)
-                        print(segments[0:20], speeds[0:20])
                         if start==0:
                             segments_all=segments
                             speeds_all=speeds
@@ -90,7 +91,7 @@ def load_data(path):
     with open(path, 'r') as f:
         file_lines = f.readlines()
     data=[]   #输入xy二维数据
-    for line in file_lines:
+    for line in file_lines[0:2000]:
         if line.strip()!='0.0000000 0.0000000':
             tmp=line.strip().split(' ')
             x=float(tmp[0])
@@ -176,7 +177,7 @@ def new_segment():
     #writer = SummaryWriter("logs/"+datetime.now().strftime("%m-%d-%H_%M_%S"))
     raw_data = load_data("trace/newreno/5/cwnd.txt")
     turn_points = get_TurnPoint(raw_data, 1e-6)
-    segments = bottomUp(raw_data, turn_points, 1e-12, merge_cost)
+    segments = bottomUp(raw_data, turn_points, 1e-14, merge_cost)
     draw_plot(raw_data, raw_data[segments], "RawData & Segments")
     plt.savefig('fig_test_2.png')
     save_path = "test/newreno"
@@ -185,10 +186,9 @@ def new_segment():
     np.savetxt(os.path.join(save_path,'5_new_segment_2.txt'), np.asarray(raw_data[segments]),fmt='%.8f %.6f')
 
 if __name__ == "__main__":
-    new_segment()
+    #new_segment()
     #topdownsegment(1e-6)
-    #raw_data = load_data("trace/newreno/5/cwnd.txt")
-    #segments = load_data("test/newreno/5_new2.txt")
-    #draw_plot(raw_data, segments, "RawData & Segments")
-    #plt.savefig('fig_test_2.png')
+    raw_data = load_data("trace/newreno/5/cwnd.txt")
+    segments = load_data("test/newreno/5_new_segment_2.txt")
+    draw_plot(raw_data, segments, "test")
     
