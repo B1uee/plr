@@ -32,7 +32,7 @@ def topdownsegment(max_error=0.001):
             tmp_files = os.listdir(tmp_path)
             for tmp_file in tmp_files:
                 if tmp_file.endswith('.txt'):
-                    data = load_data(os.path.join(path,file+'/'+tmp_file))
+                    data = load_data(os.path.join(path,file+'/'+tmp_file), writer)
                     speeds=[]
                     segments_all=[]
                     speeds_all=[]
@@ -80,7 +80,7 @@ def topdownsegment(max_error=0.001):
                     np.savetxt(os.path.join(save_path,file+'.txt'),np.asarray(output),fmt='%.8f %.6f')
                 #np.savetxt('/home/ml4net/LJH/LJH/PLR/out_speed/'+alg+'/'+file,np.asarray(output),fmt='%.8f %.6f')
 
-def load_data(path):
+def load_data(path, writer):
     with open(path, 'r') as f:
         file_lines = f.readlines()
     data=[]   #输入xy二维数据
