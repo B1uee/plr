@@ -5,17 +5,18 @@ import fit
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-from torch.utils.tensorboard import SummaryWriter
+#from torch.utils.tensorboard import SummaryWriter
 import math
 from datetime import date, datetime
 import numpy.linalg as LA
 from scipy.interpolate import interp1d
 
 
-def draw_plot(data, segments, plot_title):
+def draw_plot(data, segments, plr_data, plot_title):
     fig = figure(figsize=(16,6))
     plot(data[:,0],data[:,1],alpha=0.8,color='red',label='raw_data')
     plot(segments[:,0],segments[:,1],alpha=0.8,color='blue',label='segment_data')
+    plot(data[:,0], abs(data[:,1]-plr_data[:,1]),alpha=0.8,color='green',label='abs_loss')
     title(plot_title)
     plt.legend(loc='best')
     xlabel("time")
@@ -114,36 +115,32 @@ def bottomUp(data, turn_points, error_thred, error_estimator=merge_cost):
         tmp_data = np.c_[x_range, ratio[0]*x_range+ratio[1]]
         plr_data.extend(tmp_data.tolist())
         index = end
+    plr_data.append([data[-1][0], data[-1][1]])
     return segments, np.array(plr_data)
 
 def new_segment(angle_thred, error_thred):
+    ''' 
+    :param angle_thred: 判定其是否为转折点的角度阈值
+    :param error_thred: 融合过程中的误差阈值, 超过阈值后, 融合停止
+ 
+    :return raw_data: 原始时间序列
+    :return segments: 分割点序列
+    :return plr_data: 线性插值补充后的序列（与原数据维度一致，方便进行对比）
+    '''
+
     #writer = SummaryWriter("logs/"+datetime.now().strftime("%m-%d-%H_%M_%S"))
     raw_data = load_data("trace/newreno/5/cwnd.txt")
     turn_points = get_TurnPoint(raw_data, angle_thred)
     segments, plr_data = bottomUp(raw_data, turn_points, error_thred, merge_cost) 
-    draw_plot(raw_data, raw_data[segments], "RawData & Segments with {}_{}".format(angle_thred, error_thred))
+    draw_plot(raw_data, raw_data[segments], plr_data, "RawData & Segments with {}_{}".format(angle_thred, error_thred))
     save_path = "test/newreno"
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     np.savetxt(os.path.join(save_path,'5__plrdata_{}_{}.txt'.format(angle_thred, error_thred)), np.asarray(plr_data),fmt='%.8f %.6f')
-    np.savetxt(os.path.join(save_path,'5_segements_{}_{}.txt'.format(angle_thred, error_thred)), np.asarray(raw_data[segments]),fmt='%.8f %.6f')
+    np.savetxt(os.path.join(save_path,'5_segments_{}_{}.txt'.format(angle_thred, error_thred)), np.asarray(raw_data[segments]),fmt='%.8f %.6f')
     #writer.close()
-
-def DTWDistance(s1, s2):
-    DTW={}
+    return raw_data, segments, plr_data
  
-    for i in range(len(s1)):
-        DTW[(i, -1)] = float('inf')
-    for i in range(len(s2)):
-        DTW[(-1, i)] = float('inf')
-    DTW[(-1, -1)] = 0
- 
-    for i in range(len(s1)):
-        for j in range(len(s2)):
-            dist= (s1[i]-s2[j])**2
-            DTW[(i, j)] = dist + min(DTW[(i-1, j)],DTW[(i, j-1)], DTW[(i-1, j-1)])
- 
-    return np.sqrt(DTW[len(s1)-1, len(s2)-1])
 
 if __name__ == "__main__":
-    new_segment(1e-8,1e-10)
+    raw_data, segments, plr_data = new_segment(0.1,1e-3) 
