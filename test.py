@@ -4,7 +4,8 @@ import segment
 import fit
 import matplotlib.pyplot as plt
 import numpy as np
-import os#from torch.utils.tensorboard import SummaryWriter
+import os
+from torch.utils.tensorboard import SummaryWriter
 import math
 from datetime import date, datetime
 import numpy.linalg as LA
