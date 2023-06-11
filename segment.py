@@ -125,3 +125,4 @@ def topdownsegment(sequence, create_segment, compute_error, max_error, speeds, s
     a=leftsegs+rightsegs
     #print(a)    
     return leftsegs+rightsegs,speeds
+
