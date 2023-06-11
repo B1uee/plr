@@ -146,4 +146,4 @@ def DTWDistance(s1, s2):
     return np.sqrt(DTW[len(s1)-1, len(s2)-1])
 
 if __name__ == "__main__":
-    new_segment(1e-6,1e-10)
+    new_segment(1e-8,1e-10)
