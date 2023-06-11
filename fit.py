@@ -8,6 +8,7 @@ def sumsquared_error(sequence, segment,range_xy):
 
     p, error = leastsquareslinefit(sequence,range_xy)
     return error
+
     
 # create_segment functions
 

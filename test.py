@@ -4,17 +4,19 @@ import segment
 import fit
 import matplotlib.pyplot as plt
 import numpy as np
-import os
-#from torch.utils.tensorboard import SummaryWriter
+import os#from torch.utils.tensorboard import SummaryWriter
 import math
 from datetime import date, datetime
 import numpy.linalg as LA
+from scipy.interpolate import interp1d
+
 
 def draw_plot(data, segments, plot_title):
-    fig = plt.figure(figsize=(16,6))
+    fig = figure(figsize=(16,6))
     plot(data[:,0],data[:,1],alpha=0.8,color='red',label='raw_data')
     plot(segments[:,0],segments[:,1],alpha=0.8,color='blue',label='segment_data')
     title(plot_title)
+    plt.legend(loc='best')
     xlabel("time")
     ylabel("cwnd")
     plt.savefig(plot_title)
@@ -43,6 +45,7 @@ def topdownsegment(max_error=0.001):
                     segments_all=[]
                     speeds_all=[]
                     start=0
+                    '''
                     while start<=len(data):
                         end=min(start+5000,len(data)-1)
                         input_data=data[start:end]
@@ -54,6 +57,14 @@ def topdownsegment(max_error=0.001):
                         else:
                             segments_all+=segments
                             speeds_all+=speeds
+                    '''
+                    #segments,speeds = segment.topdownsegment(data, fit.regression, fit.sumsquared_error, max_error,speeds=speeds)
+                    #segments_all=segments
+                    #speeds_all=speeds
+                    segments = segment.raw_topdownsegment(data, fit.regression, fit.raw_sumsquared_error, max_error)
+                    print(segment[0:5])
+                    draw_plot(data, data[segments], "RawData & Segments with {}".format(max_error))
+                    a = 1
                     '''
                     draw_plot(data,"Sliding window with regression")
                     plt.savefig('fig_test_1.png')
@@ -84,7 +95,8 @@ def topdownsegment(max_error=0.001):
                     save_path = os.getcwd()+'/test/'+alg
                     if not os.path.exists(save_path):
                         os.makedirs(save_path)
-                    np.savetxt(os.path.join(save_path,file+'_2.txt'),np.asarray(output),fmt='%.8f %.6f')
+                draw_plot(data, np.array(output), "RawData & Segments with {}.png".format(max_error))
+                np.savetxt(os.path.join(save_path,file+'_2.txt'),np.asarray(output),fmt='%.8f %.6f')
                 #np.savetxt('/home/ml4net/LJH/LJH/PLR/out_speed/'+alg+'/'+file,np.asarray(output),fmt='%.8f %.6f')
 
 def load_data(path):
@@ -173,22 +185,48 @@ def bottomUp(data, turn_points, error_thred, error_estimator=merge_cost):
  
     return segments
 
-def new_segment():
+def new_segment(angle_thred, error_thred):
     #writer = SummaryWriter("logs/"+datetime.now().strftime("%m-%d-%H_%M_%S"))
     raw_data = load_data("trace/newreno/5/cwnd.txt")
-    turn_points = get_TurnPoint(raw_data, 1e-6)
-    segments = bottomUp(raw_data, turn_points, 1e-14, merge_cost)
-    draw_plot(raw_data, raw_data[segments], "RawData & Segments")
-    plt.savefig('fig_test_2.png')
+    turn_points = get_TurnPoint(raw_data, angle_thred)
+    segments = bottomUp(raw_data, turn_points, error_thred, merge_cost)
+    f1 = interp1d(raw_data[segments][0],raw_data[segments][1],kind='linear',bounds_error=False)
+    new_y= f1(raw_data[:,0])
+    new_data = np.c_[raw_data[:,0], new_y]
+    draw_plot(raw_data, raw_data[segments], "RawData & Segments with {}_{}".format(angle_thred, error_thred))
     save_path = "test/newreno"
     if not os.path.exists(save_path):
         os.makedirs(save_path)
-    np.savetxt(os.path.join(save_path,'5_new_segment_2.txt'), np.asarray(raw_data[segments]),fmt='%.8f %.6f')
+    #np.savetxt(os.path.join(save_path,'5_new_segment_new_data.txt'), np.asarray(new_data),fmt='%.8f %.6f')
+    np.savetxt(os.path.join(save_path,'5_segments_{}_{}.txt'.format(angle_thred, error_thred)), np.asarray(raw_data[segments]),fmt='%.8f %.6f')
+
+
+def DTWDistance(s1, s2):
+    DTW={}
+ 
+    for i in range(len(s1)):
+        DTW[(i, -1)] = float('inf')
+    for i in range(len(s2)):
+        DTW[(-1, i)] = float('inf')
+    DTW[(-1, -1)] = 0
+ 
+    for i in range(len(s1)):
+        for j in range(len(s2)):
+            dist= (s1[i]-s2[j])**2
+            DTW[(i, j)] = dist + min(DTW[(i-1, j)],DTW[(i, j-1)], DTW[(i-1, j-1)])
+ 
+    return np.sqrt(DTW[len(s1)-1, len(s2)-1])
+
 
 if __name__ == "__main__":
-    #new_segment()
-    #topdownsegment(1e-6)
-    raw_data = load_data("trace/newreno/5/cwnd.txt")
-    segments = load_data("test/newreno/5_new_segment_2.txt")
-    draw_plot(raw_data, segments, "test")
+    #new_segment(1e-6,1e-12)
+    topdownsegment(1e-4)
+    #raw_data = load_data("trace/newreno/5/cwnd.txt")
+    #segments = load_data("test/newreno/5_new_segment_new_data.txt")
+    #draw_plot(raw_data, segments, "test")
+    
+    
+    #dtw_dist = DTWDistance(raw_data,segments)
+    #print(dtw_dist)
+
     
